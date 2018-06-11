@@ -1,0 +1,24 @@
+sudo: required
+language: bash
+services:
+  - docker
+
+before_script:
+  - docker build . --tag=$APP_IMAGE
+script:
+  - docker run --rm -e WR_CLIENT_ID -e WR_CLIENT_SECRET -e WR_REFRESH_TOKEN --entrypoint 'python3' $APP_IMAGE -m pytest
+after_success:
+  - docker images
+
+deploy:
+  provider: script
+  skip_cleanup: true
+
+  script: ./deploy.sh
+  on:
+    tags: true
+
+branches:
+  only:
+    - master
+    - /\d+\.\d+\.\d+/
