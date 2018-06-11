@@ -1,2 +1,2 @@
 def main():
-    raise NotImplementedError("TODO!")
+    print("Hello Keboola")
