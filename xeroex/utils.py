@@ -1,8 +1,10 @@
 import json
 import xero
+import time
 import dateparser
 import voluptuous as vp
 import logging
+import collections
 
 
 def encrypt_credentials(state):
@@ -51,3 +53,38 @@ def validate_config(cfg):
         }
     )
     return expected(cfg)
+
+
+class Throttler(collections.deque):
+    """
+
+    Counts number of requests made within last `window_seconds`
+    """
+    def __init__(self, requests_limit=60, window_seconds=60, delay_seconds=1):
+        super().__init__(self)
+        self.requests_limit = requests_limit
+        self.window_seconds = window_seconds
+        self.delay_seconds =  delay_seconds
+
+    @property
+    def can_make_request(self):
+        """Return True if we can make more requests
+
+        That is - there were < 60 requests made since the oldest request
+        """
+        if len(self) < self.requests_limit:
+            return True
+        else:
+            return self.wait_until_can_make_request()
+
+    def add_request(self):
+        # current timestampe
+        self.append(time.time())
+        # what happens when we try to add request when the queue is full?
+        # is it responsibility of the caller to make sure he can call it?
+
+    def wait_until_can_make_request(self):
+        oldest_request = self.popleft()
+        while (time.time() - self.window_seconds) <= oldest_request:
+            time.sleep(self.delay_seconds)
+        return True

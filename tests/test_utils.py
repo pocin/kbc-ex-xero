@@ -3,6 +3,7 @@ import pytest
 import datetime
 import pytz
 import voluptuous as vp
+import time
 
 import xeroex.utils
 
@@ -101,3 +102,33 @@ def test_validating_configs_raise_on_invalid(eps):
 def test_validating_configs_valid_succeeds(eps, expected):
     cfg = {"endpoints": eps}
     assert xeroex.utils.validate_config(cfg)['endpoints'] == expected
+
+
+def test_throttling():
+    window_seconds = 5
+    requests_limit = 3
+
+    t = xeroex.utils.Throttler(requests_limit=requests_limit,
+                  window_seconds=window_seconds) # requests / sliding 60s window
+    # make 3 quick requests
+    for _ in range(3):
+        t.add_request()
+    start = time.time()
+    # it should take +-(window_seconds) before we can make request
+    assert t.can_make_request
+    elapsed = time.time() - start
+    assert len(t) == 2
+    delta_threshold = .1 # s
+    assert (window_seconds - delta_threshold) < elapsed < (window_seconds + delta_threshold)
+
+    # we should be able to make a new request right away
+
+    start_2 = time.time()
+
+    assert t.can_make_request
+
+    elapsed_2 = time.time() - start_2
+    # still 2, because there wasn't a popleft() invoked
+    assert len(t) == 2
+
+    assert elapsed_2 < delta_threshold
