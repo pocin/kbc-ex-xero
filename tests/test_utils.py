@@ -1,7 +1,8 @@
 import json
 import pytest
-
 import datetime
+import pytz
+import voluptuous as vp
 
 import xeroex.utils
 
@@ -54,3 +55,49 @@ def test_loading_encrypted_statefile(tmpdir):
     # make sure that the keys are "unencrypted" so we can
     # restore the credentials like xero.PartnerCredentials(**contents)
     assert contents == {"foo": "bar", "baz": 42}
+
+
+def test_parsing_datestring_raises_on_invalid_value():
+    with pytest.raises(ValueError):
+        xeroex.utils.parse_datestring("invalid string")
+
+
+def test_parsing_datestring_works():
+    assert isinstance(xeroex.utils.parse_datestring("now utc"), datetime.datetime)
+
+def test_validating_minimal_config():
+    cfg = {"endpoints": []}
+    assert xeroex.utils.validate_config(cfg)
+
+@pytest.mark.parametrize("eps", [
+    [{"endpoint": "Foopoint", "parametrs": {"foo_param": 42}}]
+])
+def test_validating_configs_raise_on_invalid(eps):
+    cfg = {"endpoints": eps}
+    with pytest.raises(vp.error.MultipleInvalid):
+        xeroex.utils.validate_config(cfg)
+
+
+@pytest.mark.parametrize("eps,expected", [
+    (
+        [{"endpoint": "Foopoint"}], #expected
+        [{"endpoint": "Foopoint"}]  #expected
+    ),
+    (
+        [{"endpoint": "Foopoint",
+          "parameters": {"foo_param": 42}}], #endpoints
+        [{"endpoint": "Foopoint",            #expected
+          "parameters": {"foo_param": 42}}]
+    ),
+    ( # converting "since" parameter to datetime
+        [{"endpoint": "Foopoint",
+          "parameters": {"foo_param": 42,
+                         "since": "2018-01-31 21:00:00 UTC"}}], #endpoints
+        [{"endpoint": "Foopoint",
+          "parameters": {"foo_param": 42,
+                         "since": datetime.datetime(2018, 1, 31, 21, 0,0, tzinfo=pytz.utc)}}] #expected
+    )
+])
+def test_validating_configs_valid_succeeds(eps, expected):
+    cfg = {"endpoints": eps}
+    assert xeroex.utils.validate_config(cfg)['endpoints'] == expected

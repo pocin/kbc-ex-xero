@@ -1,0 +1,16 @@
+{
+  "debug": true,
+  "endpoints": [
+    {
+      "endpoint": "Contacts",
+      "parameters": {"IncludeArchived": true}
+    },
+    {
+      "endpoint": "Contacts",
+      "parameters": {"since": "2 days ago UTC"}
+    },
+    {
+      "endpoint": "Journals"
+    }
+  ]
+}
