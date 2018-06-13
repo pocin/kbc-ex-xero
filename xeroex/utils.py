@@ -29,7 +29,7 @@ def save_statefile(path, contents):
 def parse_datestring(dt_string):
     """Convert human readable string or any string to UTC datetime object
     """
-    parsed = dateparser.parse(dt_string)
+    parsed = dateparser.parse(dt_string, settings={'TIMEZONE': 'UTC'})
     if parsed is None:
         raise ValueError("Couldn't parse '{}' into datetime!".format(dt_string))
     logging.info("Parsing '%s' as '%s'", dt_string, parsed)
