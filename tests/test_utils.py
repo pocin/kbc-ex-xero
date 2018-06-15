@@ -114,11 +114,11 @@ def test_throttling():
     for _ in range(3):
         t.add_request()
     start = time.time()
-    # it should take +-(window_seconds) before we can make request
+    # it should take +-(window_seconds) before we can make request (limit is 3)
     assert t.can_make_request
     elapsed = time.time() - start
     assert len(t) == 2
-    delta_threshold = .1 # s
+    delta_threshold = .1 # s -> account for some overhead
     assert (window_seconds - delta_threshold) < elapsed < (window_seconds + delta_threshold)
 
     # we should be able to make a new request right away
@@ -132,3 +132,14 @@ def test_throttling():
     assert len(t) == 2
 
     assert elapsed_2 < delta_threshold
+
+def test_throttling_first_request_is_ok():
+    throttler = xeroex.utils.Throttler(requests_limit=60,
+                                                window_seconds=60,
+                                                delay_seconds=1)
+
+    start = time.time()
+    throttler.wait_until_can_make_request()
+    elapsed = time.time() - start
+    # first call should be instant
+    assert elapsed < 0.5

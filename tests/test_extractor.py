@@ -11,17 +11,12 @@ def testing_saving_and_serializing_json_responses(tmpdir):
         yield [{"Name":3}, {"Name":4}] #chunk
         yield [{"Name":5}, {"Name":6}] #chunk
 
-    # expected = tmpdir.join("EXPECTED_NL_DELIMITED_JSONS.csv")
-    # with open(expected.strpath) as f:
-    #     wr = csv.DictWriter(f, fieldnames=['data'])
-    #     for row in raw_rows:
-    #         wr.writerow({"data": json.dumps(row)})
-
 
     outpath = tmpdir.join('one_big_list.csv')
     out = xeroex.extractor.XeroEx.write_json_data(data(), outpath.strpath, )
 
 
+    # after serializing back from csv
     expected = [
         {"Name":1}, {"Name":2}, {"Name":3},
         {"Name":4}, {"Name":5}, {"Name":6}]
