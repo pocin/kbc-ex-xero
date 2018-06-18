@@ -51,7 +51,8 @@ def xero_credentials():
             raw_rsa_key = os.environ['XERO_PRIVATE_RSA_KEY']
             rsa_key = eval(raw_rsa_key)
         except SyntaxError:
-            rsa_key = raw_rsa_key
+            # travis
+            rsa_key = raw_rsa_key.decode('unicode_escape')
         credentials = xero.auth.PrivateCredentials(
             os.environ['XERO_CONSUMER_KEY'],
             rsa_key)
