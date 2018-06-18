@@ -1,6 +1,7 @@
 import json
 import os
 import xero
+import pytz
 import time
 import dateparser
 import voluptuous as vp
@@ -35,10 +36,11 @@ def save_statefile(contents, path=None):
 def parse_datestring(dt_string):
     """Convert human readable string or any string to UTC datetime object
     """
-    parsed = dateparser.parse(dt_string, settings={'TIMEZONE': 'UTC'})
+    parsed = dateparser.parse(dt_string)
     if parsed is None:
         raise vp.Invalid("Couldn't parse '{}' into datetime!".format(dt_string))
     logging.info("Parsing '%s' as '%s'", dt_string, parsed)
+    parsed = parsed.astimezone(pytz.utc)
     return parsed
 
 

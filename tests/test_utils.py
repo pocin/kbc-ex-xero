@@ -63,8 +63,13 @@ def test_parsing_datestring_raises_on_invalid_value():
         xeroex.utils.parse_datestring("invalid string")
 
 
-def test_parsing_datestring_works():
-    assert isinstance(xeroex.utils.parse_datestring("now utc"), datetime.datetime)
+@pytest.mark.parametrize("datestring,timezone", [
+    ("now utc", pytz.utc),
+    ("now PT", pytz.utc),
+    ("now GMT+8", pytz.utc)
+])
+def test_parsing_datestrings(datestring, timezone):
+    assert xeroex.utils.parse_datestring(datestring).tzinfo == timezone
 
 @pytest.mark.parametrize("eps", [
     [{"endpoint": "Foopoint", "parametrs": {"foo_param": 42}}]
