@@ -10,7 +10,7 @@ import voluptuous as vp
 import xeroex
 from xeroex.extractor import main
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def image_parameters():
     return {
         "consumer_key": os.environ['XERO_PUBLIC_CONSUMER_KEY'],
@@ -33,10 +33,7 @@ CONFIGS = {
         "endpoints": [
             {
                 "endpoint": "Contacts",
-                "parameters": {"since": "2 days ago UTC"}
-            },
-            {
-                "endpoint": "Something"
+                "parameters": {"since": "2 years ago UTC"}
             }
         ]
     }
@@ -92,3 +89,17 @@ def test_main_getting_authorization_url(caplog, image_parameters):
 
 # I should test exchanging verification code for auth url but this
 # can't be done as this needs manual intervention
+
+@pytest.mark.skipif(not os.getenv("XERO_PUBLIC_CREDENTIALS_STATE"),
+                    reason='requires manualy setting XERO_PUBLIC_CREDENTIALS_STATE')
+def test_main_downloading_data(tmpdir, image_parameters):
+    datadir = tmpdir.mkdir("data")
+    outtables = datadir.mkdir("out").mkdir("tables")
+    instate = datadir.mkdir("in").join("state.json")
+    instate.write(os.getenv("XERO_PUBLIC_CREDENTIALS_STATE"))
+    xeroex.extractor.main(datadir.strpath, CONFIGS['extract'], image_parameters)
+
+    assert 'Contacts.csv' in outtables.listdir()[0].strpath
+    assert os.path.isfile(os.path.join(datadir.strpath, 'out','state.json'))
+
+

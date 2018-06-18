@@ -7,21 +7,40 @@ import dateparser
 import voluptuous as vp
 import logging
 import collections
+import pickle
+import datetime
 
 logger = logging.getLogger(__name__)
 
 
+
+CREDENTIALS_DT_FIELDS = ['oauth_expires_at', 'oauth_authorization_expires_at']
 def encrypt_credentials(state):
-    """Prefix keys in the credentials dictionary with #"""
-    return {"#" + k: v for k, v in state.items()}
+    """datetime objects are not python serializable,
+    so we cast them to string first
+    """
+
+    encrypted = {}
+    for k, v in state.items():
+        if k in CREDENTIALS_DT_FIELDS:
+            encrypted[k] = v.strftime("%Y-%M-%d %H:%m:%S.%f")
+        else:
+            encrypted[k] = v
+    return {
+        "#credentials_state": encrypted
+    }
 
 
-def decrypt_credentials(state):
+def decrypt_credentials(pickled_encrpyted_state):
     """remove # from keys in the credentials dictionary"""
-    return {k.lstrip("#"): v for k, v in state.items()}
+    return {
+        k: v if k not in CREDENTIALS_DT_FIELDS else datetime.datetime.strptime(v, "%Y-%M-%d %H:%m:%S.%f")
+        for k, v
+        in pickled_encrpyted_state['#credentials_state'].items()
+    }
 
 
-def load_statefile(path=None):
+def load_credentials_from_statefile(path=None):
     state_path = path or os.path.join(os.getenv("KBC_DATADIR"), 'in', 'state.json')
     with open(state_path) as io:
         return decrypt_credentials(json.load(io))

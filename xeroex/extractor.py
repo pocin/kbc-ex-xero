@@ -29,27 +29,27 @@ def main(datadir, params, image_params):
 
 
     if action == 'get_authorization_url':
-        creds = xero.auth.PublicCredentials(consumer_key, consumer_secret)
-        logger.info("Visit this url to get authorization code %s", creds.url)
-        return creds.url
+        credentials = xero.auth.PublicCredentials(consumer_key, consumer_secret)
+        logger.info("Visit this url to get authorization code %s", credentials.url)
+        return credentials.url
     elif action == 'verify':
-        creds = xero.auth.PublicCredentials(consumer_key, consumer_secret)
+        credentials = xero.auth.PublicCredentials(consumer_key, consumer_secret)
         try:
             code = str(params["verification_code"])
         except KeyError:
             raise xeroex.exceptions.XeroexUserConfigError(
                 'missing "verification_code": "123456" parameter, '
                 'since you set "action": "verify"')
-        creds.verify(code)
+        credentials.verify(code)
         logger.info("verification_code exchanged for tokens. Feel free to configure extractor as required")
-        xeroex.utils.save_statefile(creds.state)
+        xeroex.utils.save_statefile(credentials.state)
 
     elif action == 'extract':
         logger.info("Proceeding to extraction")
         logger.debug("Verifying endpoints configuration")
         validated_endpoint_params = xeroex.utils.validate_endpoints_config(params['endpoints'])
         # all credentials are in statefile until oauth-bundle implements it
-        creds = xeroex.utils.load_statefile()
+        creds = xeroex.utils.load_credentials_from_statefile(os.path.join(datadir, 'in', 'state.json'))
         credentials = xero.auth.PublicCredentials(**creds)
         ex = XeroEx(credentials)
         try:
@@ -59,14 +59,16 @@ def main(datadir, params, image_params):
                 "Something went wrong. We won't be able to refresh the access "
                 "tokens upon next run. Please REAUTHORIZE the application!")
             raise
+        else:
+            xeroex.utils.save_statefile(credentials.state, path=os.path.join(datadir, 'out', 'state.json'))
     else:
         raise xeroex.exceptions.XeroexUserConfigError('Unknown "action": {}'.format(action))
 
 def do_extraction(ex, endpoints, datadir='/data'):
     for endpoint in endpoints:
-        outpath = os.path.join(datadir, 'out', 'tables', endpoint['name'] + '.csv')
+        outpath = os.path.join(datadir, 'out', 'tables', endpoint['endpoint'] + '.csv')
         ex.download_endpoint_to_file(
-            endpoint['name'],
+            endpoint['endpoint'],
             endpoint.get('params', {}),
             outpath=outpath)
 
@@ -190,7 +192,8 @@ class XeroEx:
                 writer.writeheader()
             for chunk in source:
                 for entity in chunk:
-                    writer.writerow({"data": json.dumps(entity)})
+                    # isoformat because of datetimes
+                    writer.writerow({"data": json.dumps(entity, default=lambda x: x.isoformat())})
         return destination_path
 
     def download_endpoint_to_file(self, endpoint, parameters, outpath):
