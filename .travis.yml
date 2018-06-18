@@ -6,7 +6,7 @@ services:
 before_script:
   - docker build . --tag=$APP_IMAGE
 script:
-  - docker run --rm -e WR_CLIENT_ID -e WR_CLIENT_SECRET -e WR_REFRESH_TOKEN --entrypoint 'python3' $APP_IMAGE -m pytest
+  - docker run --rm -e KBC_DEVELOPERPORTAL_APP -e KBC_DEVELOPERPORTAL_VENDOR -e KBC_DEVELOPERPORTAL_USERNAME -e KBC_DEVELOPERPORTAL_PASSWORD -e APP_IMAGE -e XERO_CREDENTIALS_TYPE -e XERO_CONSUMER_KEY -e XERO_CONSUMER_SECRET -e XERO_PRIVATE_RSA_KEY -e XERO_PUBLIC_CONSUMER_KEY -e XERO_PUBLIC_CONSUMER_SECRET --entrypoint 'python3' $APP_IMAGE -m pytest
 after_success:
   - docker images
 
@@ -17,3 +17,4 @@ deploy:
   script: ./deploy.sh
   on:
     tags: true
+
