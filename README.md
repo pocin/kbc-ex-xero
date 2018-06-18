@@ -7,9 +7,34 @@ credentials required for reauthorization are stored in statefile (newly supports
 
 
 # Configuration
+## Authorization
+Authorization is *temporary* slightly more complicated. Until support for OAuth-1.0a RSA signed requests is added to [OAuth-bundle](https://github.com/keboola/oauth-v2-bundle/issues/38)
+
+### Get authoriazation url
+Run the extractor with the following config
+
+```javascript
+{
+  "action": "get_authorization_url"
+}
+```
+This will print the XERO authorization url in the job logs. Go and visit the url and authorize your account. You will be given a 6 digits verification code
+
+Run the extractor with the following config.
+
+```javascript
+{
+  "action": "verify",
+  "verification_code" : "<YOUR_CODE_FROM_PREVIOUS_STEP_HERE>"
+}
+```
+
+This will securely save the credentials and the extractor is ready to be used:
+## Actual extraction
 ```javascript
 {
   "debug": true,
+  "action": "extract"
   "endpoints": [
     {
       "endpoint": "Contacts",
@@ -58,7 +83,10 @@ $ docker-compose run --rm dev
 
 ## Run tests
 ```
+cp .env_template .env
+# edit .env to add the required env variables with credentials
 make test
+# or make testk what='test_validating_' #if you want to run just certain tests whose name match `test_validating_`
 # after dev session is finished to clean up containers..
 make clean 
 ```
