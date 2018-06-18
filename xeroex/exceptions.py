@@ -7,4 +7,3 @@ class XeroexUserConfigError(XeroexError, ValueError):
 
 class XeroexAuthorizationExpired(XeroexError):
     """When PublicCredentials expire after 30 minutes"""
-

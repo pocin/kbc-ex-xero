@@ -9,7 +9,6 @@ import collections
 
 logger = logging.getLogger(__name__)
 
-# PATH_STATE_OUT = os.path.join(os.getenv("KBC_DATADIR"), 'out', 'state.json')
 
 def encrypt_credentials(state):
     """Prefix keys in the credentials dictionary with #"""
@@ -21,14 +20,16 @@ def decrypt_credentials(state):
     return {k.lstrip("#"): v for k, v in state.items()}
 
 
-def load_statefile(path):
-    with open(path) as io:
+def load_statefile(path=None):
+    state_path = path or os.path.join(os.getenv("KBC_DATADIR"), 'in', 'state.json')
+    with open(state_path) as io:
         return decrypt_credentials(json.load(io))
 
-def save_statefile(path, contents):
+def save_statefile(contents, path=None):
     """Back up credentials for next run"""
     logger.info("Backing up credentials to statefile")
-    with open(path, 'w') as io:
+    state_path = path or os.path.join(os.getenv("KBC_DATADIR"), 'out', 'state.json')
+    with open(state_path, 'w') as io:
         return json.dump(encrypt_credentials(contents), io)
 
 def parse_datestring(dt_string):
@@ -36,7 +37,7 @@ def parse_datestring(dt_string):
     """
     parsed = dateparser.parse(dt_string, settings={'TIMEZONE': 'UTC'})
     if parsed is None:
-        raise ValueError("Couldn't parse '{}' into datetime!".format(dt_string))
+        raise vp.Invalid("Couldn't parse '{}' into datetime!".format(dt_string))
     logging.info("Parsing '%s' as '%s'", dt_string, parsed)
     return parsed
 
@@ -46,18 +47,25 @@ def validate_config(cfg):
     expected = vp.Schema(
         {
             # vp.Optional("global_parameters"): dict,
-            vp.Optional("debug"): bool,
-            vp.Required("endpoints"): [
-                {
-                    "endpoint": str,
-                    vp.Optional("parameters"): vp.Schema(
-                        {"since": parse_datestring},
-                        extra=True)
-                }
-            ]
+            "debug": bool,
+            vp.Required("action"):  vp.Any("verify", "get_authorization_url", "extract"),
+            "endpoints": list # this gets validated on its own
         }
     )
     return expected(cfg)
+
+def validate_endpoints_config(eps_config):
+    schema = vp.Schema(
+        [{
+            "endpoint": str,
+            vp.Optional("parameters"): vp.Schema(
+                {
+                    "since": parse_datestring
+                },
+                extra=vp.ALLOW_EXTRA)
+        }]
+    )
+    return schema(eps_config)
 
 
 class Throttler(collections.deque):

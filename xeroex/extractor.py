@@ -1,5 +1,6 @@
 import json
 import csv
+import os
 import logging
 import sys
 
@@ -15,9 +16,59 @@ logger = logging.getLogger(__name__)
 # sh.setFormatter(formatter)
 # logger.addHandler(sh)
 
-def main():
-    logger.info("Hello Keboola")
+def main(datadir, params, image_params):
+    logger.info("Starting extractor")
+    logger.debug("Debug mode active")
 
+    action = params.get("action")
+
+    # contains the RSA key and client secrets
+
+    consumer_key = image_params['consumer_key']
+    consumer_secret = image_params['#consumer_secret']
+
+
+    if action == 'get_authorization_url':
+        creds = xero.auth.PublicCredentials(consumer_key, consumer_secret)
+        logger.info("Visit this url to get authorization code %s", creds.url)
+        return creds.url
+    elif action == 'verify':
+        creds = xero.auth.PublicCredentials(consumer_key, consumer_secret)
+        try:
+            code = str(params["verification_code"])
+        except KeyError:
+            raise xeroex.exceptions.XeroexUserConfigError(
+                'missing "verification_code": "123456" parameter, '
+                'since you set "action": "verify"')
+        creds.verify(code)
+        logger.info("verification_code exchanged for tokens. Feel free to configure extractor as required")
+        xeroex.utils.save_statefile(creds.state)
+
+    elif action == 'extract':
+        logger.info("Proceeding to extraction")
+        logger.debug("Verifying endpoints configuration")
+        validated_endpoint_params = xeroex.utils.validate_endpoints_config(params['endpoints'])
+        # all credentials are in statefile until oauth-bundle implements it
+        creds = xeroex.utils.load_statefile()
+        credentials = xero.auth.PublicCredentials(**creds)
+        ex = XeroEx(credentials)
+        try:
+            do_extraction(ex, validated_endpoint_params, datadir=datadir)
+        except:
+            logging.error(
+                "Something went wrong. We won't be able to refresh the access "
+                "tokens upon next run. Please REAUTHORIZE the application!")
+            raise
+    else:
+        raise xeroex.exceptions.XeroexUserConfigError('Unknown "action": {}'.format(action))
+
+def do_extraction(ex, endpoints, datadir='/data'):
+    for endpoint in endpoints:
+        outpath = os.path.join(datadir, 'out', 'tables', endpoint['name'] + '.csv')
+        ex.download_endpoint_to_file(
+            endpoint['name'],
+            endpoint.get('params', {}),
+            outpath=outpath)
 
 class XeroEx:
     """
@@ -143,6 +194,7 @@ class XeroEx:
         return destination_path
 
     def download_endpoint_to_file(self, endpoint, parameters, outpath):
+        logging.info("Downloading %s %s", endpoint, parameters)
         stream_of_chunks = self.get_endpoint_data(endpoint, parameters)
         self.write_json_data(stream_of_chunks, outpath, column_name='data', header=True)
         # manifest maybe?

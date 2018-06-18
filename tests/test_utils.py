@@ -40,7 +40,7 @@ def test_saving_statefile(tmpdir):
     state = tmpdir.join("state.json")
 
     contents = {"foo": "bar", "baz": 42}
-    xeroex.utils.save_statefile(state.strpath, contents)
+    xeroex.utils.save_statefile(contents, state.strpath)
 
     # make sure the keys of the statefile on disk are prefixed with #
     # keboola will handle actual encryption upon import
@@ -59,16 +59,12 @@ def test_loading_encrypted_statefile(tmpdir):
 
 
 def test_parsing_datestring_raises_on_invalid_value():
-    with pytest.raises(ValueError):
+    with pytest.raises(vp.Invalid):
         xeroex.utils.parse_datestring("invalid string")
 
 
 def test_parsing_datestring_works():
     assert isinstance(xeroex.utils.parse_datestring("now utc"), datetime.datetime)
-
-def test_validating_minimal_config():
-    cfg = {"endpoints": []}
-    assert xeroex.utils.validate_config(cfg)
 
 @pytest.mark.parametrize("eps", [
     [{"endpoint": "Foopoint", "parametrs": {"foo_param": 42}}]
@@ -81,7 +77,7 @@ def test_validating_configs_raise_on_invalid(eps):
 
 @pytest.mark.parametrize("eps,expected", [
     (
-        [{"endpoint": "Foopoint"}], #expected
+        [{"endpoint": "Foopoint"}], #raw config
         [{"endpoint": "Foopoint"}]  #expected
     ),
     (
@@ -100,8 +96,17 @@ def test_validating_configs_raise_on_invalid(eps):
     )
 ])
 def test_validating_configs_valid_succeeds(eps, expected):
-    cfg = {"endpoints": eps}
-    assert xeroex.utils.validate_config(cfg)['endpoints'] == expected
+    assert xeroex.utils.validate_endpoints_config(eps) == expected
+
+@pytest.mark.parametrize("config,message", [
+    ({}, "endpoints|action"),
+    ({"endpoints": []}, "action"), # missing action key
+])
+def test_validating_configs_fails_without_params(config, message):
+    with pytest.raises(vp.MultipleInvalid) as excinfo:
+        xeroex.utils.validate_config(config)
+    if message:
+        assert excinfo.match(r".*{}.*".format(message))
 
 
 def test_throttling():
