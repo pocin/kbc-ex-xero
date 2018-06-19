@@ -49,6 +49,7 @@ def xero_credentials():
     elif creds_type == 'private':
         try:
             raw_rsa_key = os.environ['XERO_PRIVATE_RSA_KEY']
+            print("got rsa key", raw_rsa_key)
             rsa_key = eval(raw_rsa_key)
         except (SyntaxError, NameError):
             # travis
@@ -63,6 +64,9 @@ def xero_credentials():
     return credentials
 
 
+@pytest.mark.skipif(
+    bool(os.getenv("TRAVIS")),
+    reason="travis can't read newlines in secure env variables")
 @pytest.mark.parametrize("endpoint,params", [
     ("Accounts", {}),
     ("CreditNotes",{}),
@@ -87,6 +91,9 @@ def test_validating_real_valid_configs(config):
     xeroex.utils.validate_config(config)
 
 
+@pytest.mark.skipif(
+    bool(os.getenv("TRAVIS")),
+    reason="travis can't read newlines in secure env variables")
 def test_main_getting_authorization_url(caplog, image_parameters):
     with caplog.at_level(logging.DEBUG):
         url = main('/nonexistent', CONFIGS['get_authorization_url'], image_parameters)
