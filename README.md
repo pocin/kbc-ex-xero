@@ -90,3 +90,6 @@ make test
 # after dev session is finished to clean up containers..
 make clean 
 ```
+
+## In keboola components
+pass the ([encrypted](https://keboolaencryption.docs.apiary.io/#reference/encrypt/encryption/encrypt-data)) `#consumer_secret` and `#consumer_key` through stack_parameters

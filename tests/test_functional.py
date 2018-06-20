@@ -13,7 +13,7 @@ from xeroex.extractor import main
 @pytest.fixture(scope='module')
 def image_parameters():
     return {
-        "consumer_key": os.environ['XERO_PUBLIC_CONSUMER_KEY'],
+        "#consumer_key": os.environ['XERO_PUBLIC_CONSUMER_KEY'],
         "#consumer_secret": os.environ['XERO_PUBLIC_CONSUMER_SECRET']
     }
 
