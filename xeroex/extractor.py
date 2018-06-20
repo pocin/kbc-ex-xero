@@ -24,7 +24,7 @@ def main(datadir, params, image_params):
 
     # contains the RSA key and client secrets
 
-    consumer_key = image_params['consumer_key']
+    consumer_key = image_params['#consumer_key']
     consumer_secret = image_params['#consumer_secret']
 
 
