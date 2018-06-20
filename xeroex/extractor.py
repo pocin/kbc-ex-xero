@@ -6,6 +6,7 @@ import sys
 
 from xero import Xero
 import xero
+import xero.auth
 import xeroex.utils
 import xeroex.exceptions
 
