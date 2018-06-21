@@ -17,41 +17,25 @@ logger = logging.getLogger(__name__)
 # sh.setFormatter(formatter)
 # logger.addHandler(sh)
 
-def main(datadir, params, image_params):
+def main(datadir, params, credentials):
     logger.info("Starting extractor")
     logger.debug("Debug mode active")
 
     action = params.get("action")
 
-    # contains the RSA key and client secrets
-
-    consumer_key = image_params['#consumer_key']
-    consumer_secret = image_params['#consumer_secret']
-
-
-    if action == 'get_authorization_url':
-        credentials = xero.auth.PublicCredentials(consumer_key, consumer_secret)
-        logger.info("Visit this url to get authorization code %s", credentials.url)
-        return credentials.url
-    elif action == 'verify':
-        credentials = xero.auth.PublicCredentials(consumer_key, consumer_secret)
-        try:
-            code = str(params["verification_code"])
-        except KeyError:
-            raise xeroex.exceptions.XeroexUserConfigError(
-                'missing "verification_code": "123456" parameter, '
-                'since you set "action": "verify"')
-        credentials.verify(code)
-        logger.info("verification_code exchanged for tokens. Feel free to configure extractor as required")
-        xeroex.utils.save_statefile(credentials.state)
-
-    elif action == 'extract':
+    if action == 'extract':
         logger.info("Proceeding to extraction")
         logger.debug("Verifying endpoints configuration")
         validated_endpoint_params = xeroex.utils.validate_endpoints_config(params['endpoints'])
         # all credentials are in statefile until oauth-bundle implements it
-        creds = xeroex.utils.load_credentials_from_statefile(os.path.join(datadir, 'in', 'state.json'))
-        credentials = xero.auth.PublicCredentials(**creds)
+        try:
+            # if there are creds in statefile use them and don't bother with kbc oauth injected
+            logging.info("Getting cached credentials from statefile")
+            creds = xeroex.utils.load_credentials_from_statefile(os.path.join(datadir, 'in', 'state.json'))
+            credentials = xero.auth.PublicCredentials(**creds)
+        except KeyError:
+            logging.info("Not found. Using credentials supplied by keboola!")
+            credentials = xero.auth.PublicCredentials(**credentials, verified=True)
         ex = XeroEx(credentials)
         try:
             do_extraction(ex, validated_endpoint_params, datadir=datadir)

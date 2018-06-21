@@ -17,6 +17,15 @@ def image_parameters():
         "#consumer_secret": os.environ['XERO_PUBLIC_CONSUMER_SECRET']
     }
 
+@pytest.fixture(scope='module')
+def kbc_credentials():
+    return {
+        "consumer_key": os.environ['XERO_PUBLIC_CONSUMER_KEY'],
+        "consumer_secret": os.environ['XERO_PUBLIC_CONSUMER_SECRET'],
+        "oauth_token": os.getenv("XERO_KBC_OAUTH_TOKEN"),
+        "oauth_token_secret": os.getenv("XERO_KBC_OAUTH_TOKEN_SECRET")
+    }
+
 #valid configs
 CONFIGS = {
     'get_authorization_url': {
@@ -88,15 +97,6 @@ def test_validating_real_valid_configs(config):
     xeroex.utils.validate_config(config)
 
 
-def test_main_getting_authorization_url(caplog, image_parameters):
-    with caplog.at_level(logging.DEBUG):
-        url = main('/nonexistent', CONFIGS['get_authorization_url'], image_parameters)
-        assert url in caplog.text
-        assert vp.Schema(vp.Url)(url)
-
-# I should test exchanging verification code for auth url but this
-# can't be done as this needs manual intervention
-
 @pytest.mark.skipif(not os.getenv("XERO_PUBLIC_CREDENTIALS_STATE"),
                     reason='requires manualy setting XERO_PUBLIC_CREDENTIALS_STATE')
 def test_main_downloading_data(tmpdir, image_parameters):
@@ -110,3 +110,13 @@ def test_main_downloading_data(tmpdir, image_parameters):
     assert os.path.isfile(os.path.join(datadir.strpath, 'out','state.json'))
 
 
+@pytest.mark.skipif(not os.getenv("XERO_KBC_OAUTH_TOKEN") and not os.getenv("XERO_KBC_OAUTH_TOKEN_SECRET"),
+                    reason="Needs manual setting")
+def test_main_downloading_data_with_kbc_token(tmpdir, kbc_credentials):
+    datadir = tmpdir.mkdir("data")
+    outtables = datadir.mkdir("out").mkdir("tables")
+    instate = datadir.mkdir("in").join("state.json").write('{}')
+    xeroex.extractor.main(datadir.strpath, CONFIGS['extract'], kbc_credentials)
+
+    assert 'Contacts.csv' in outtables.listdir()[0].strpath
+    assert os.path.isfile(os.path.join(datadir.strpath, 'out','state.json'))

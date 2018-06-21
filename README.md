@@ -46,7 +46,11 @@ This will securely save the credentials and the extractor is ready to be used:
     },
     {
       "endpoint": "Journals"
-    }
+    },
+      {
+          "endpoint": "Accounts",
+          "parameters": ""
+      }
   ]
 }
 ```
