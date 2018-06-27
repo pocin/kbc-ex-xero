@@ -40,6 +40,22 @@ The `"endpoints"` is a list of endpoint configurations. Each configuration has a
 The `since` parameter is used to set the `if-modified-since` header and should be in UTC. Example values are `2 days ago UTC` or `2018-01-31 12:00:00 UTC`
 
 
+The extractor outputs json objects in csv by default. You might be interested in serializing this into pure csv using [flatten-json](https://components.keboola.com/~/components/apac.processor-flatten-json) processor
+
+```javascript
+{
+  "before": [],
+  "after": [
+    {
+      "definition": {
+        "component": "apac.processor-flatten-json"
+      }
+    }
+  ]
+}
+```
+
+
 
 
 # Development
