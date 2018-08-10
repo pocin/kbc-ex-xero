@@ -67,6 +67,9 @@ $ docker-compose run --rm dev
 ```
 
 ## Run tests
+
+The demo company lasts only 30 days, after that you need to create a new app and update the XERO_CONSUMER_KEY and XERO_CONSUMER_SECRET in .env
+
 ```
 cp .env_template .env
 # edit .env to add the required env variables with credentials
