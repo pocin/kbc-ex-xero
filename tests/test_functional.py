@@ -58,7 +58,6 @@ def xero_credentials():
     elif creds_type == 'private':
         try:
             raw_rsa_key = os.environ['XERO_PRIVATE_RSA_KEY']
-            print("got rsa key", raw_rsa_key)
             rsa_key = eval(raw_rsa_key)
         except (SyntaxError, NameError):
             # travis
