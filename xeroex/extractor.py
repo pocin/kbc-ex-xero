@@ -103,7 +103,7 @@ class XeroEx:
             self.throttler.can_make_request
             try:
                 response = method(**params)
-            except xero.exceptions.XeroUnauthorized:
+            except xero.exceptions.XeroUnauthorized as err:
                 # make 1 attempt to refresh tokens
                 try:
                     # assume we are using partner credentials
@@ -111,8 +111,9 @@ class XeroEx:
                 except AttributeError:
                     # We are using PublicCredentials which expire after 30 mins and can't be refreshed
                     raise xeroex.exceptions.XeroexAuthorizationExpired(
+                        "%s - "
                         "Used PublicCredentials expired, "
-                        "please reauthorize the extractor!")
+                        "please reauthorize the extractor!", err)
                 else:
                     # tokens refreshed
                     response = method(**params)
