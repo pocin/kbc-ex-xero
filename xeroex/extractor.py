@@ -45,7 +45,11 @@ def main(datadir, params, credentials):
                 "tokens upon next run. Please REAUTHORIZE the application!")
             raise
         else:
-            xeroex.utils.save_statefile(credentials.state, path=os.path.join(datadir, 'out', 'state.json'))
+            logging.debug("Here would be credentials cached in statefile (when using partner app)")
+            # xeroex.utils.save_statefile(credentials.state, path=os.path.join(datadir, 'out', 'state.json'))
+    elif action == 'wipe_statefile':
+        with open(os.path.join(datadir, 'out', 'state.json'), 'w') as f:
+            json.dump({}, f)
     else:
         raise xeroex.exceptions.XeroexUserConfigError('Unknown "action": {}'.format(action))
 

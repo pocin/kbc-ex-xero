@@ -25,6 +25,8 @@
 }
 ```
 
+alternatively `action` can be `wipe_statefile` which, cleans cached credentials.
+
 The `"endpoints"` is a list of endpoint configurations. Each configuration has an `"endpoint"` defined, with optional `parameters` (see the api [documentation](https://developer.xero.com/documentation/api/api-overview) for each endpoint)
 
 ```javascript
